@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Temporizador Pomodoro con Notificaciones</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code&display=swap');
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #121212;
+            font-family: 'Fira Code', monospace;
+            color: #FFFFFF;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        body.day-mode {
+            background-color: #E0E0E0;
+            color: #1E1E1E;
+        }
+        .container {
+            display: flex;
+            width: 90%;
+            max-width: 1200px;
+            height: 80vh;
+            background-color: #1E1E1E;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            transition: background-color 0.3s;
+        }
+        body.day-mode .container {
+            background-color: #FFFFFF;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+        }
+        .left-panel {
+            width: 40%;
+            padding: 20px;
+            background-color: #1E1E1E;
+            border-right: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        body.day-mode .left-panel {
+            background-color: #FFFFFF;
+            border-right: 1px solid #CCC;
+        }
+        .right-panel {
+            width: 60%;
+            background: linear-gradient(135deg, #FF6F61, #FFD700);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background 0.3s;
+        }
+        body.day-mode .right-panel {
+            background: linear-gradient(135deg, #4CAF50, #81C784);
+        }
+        .timer-controls {
+            text-align: center;
+        }
+        #phase {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: #FF6F61;
+            transition: color 0.3s;
+        }
+        body.day-mode #phase {
+            color: #4CAF50;
+        }
+        #timer {
+            font-size: 48px;
+            margin: 20px 0;
+            padding: 10px;
+            border: 1px solid #333;
+            border-radius: 5px;
+            background-color: #2A2A2A;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        body.day-mode #timer {
+            background-color: #F5F5F5;
+            border-color: #CCC;
+        }
+        #cycle {
+            font-size: 18px;
+            color: #888;
+            margin-bottom: 20px;
+            transition: color 0.3s;
+        }
+        body.day-mode #cycle {
+            color: #666;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            font-family: 'Fira Code', monospace;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            color: #FFFFFF;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .start-btn {
+            background-color: #FF6F61;
+        }
+        .start-btn:hover {
+            background-color: #E65A50;
+        }
+        body.day-mode .start-btn {
+            background-color: #4CAF50;
+            color: #FFFFFF;
+        }
+        body.day-mode .start-btn:hover {
+            background-color: #45A049;
+        }
+        .stop-btn {
+            background-color: #FF2D55;
+        }
+        .stop-btn:hover {
+            background-color: #E0284D;
+        }
+        body.day-mode .stop-btn {
+            background-color: #F44336;
+        }
+        body.day-mode .stop-btn:hover {
+            background-color: #D32F2F;
+        }
+        .timer-circle {
+            position: relative;
+            width: 300px;
+            height: 300px;
+        }
+        .timer-circle svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+        .timer-circle circle {
+            fill: none;
+            stroke: #FF6F61;
+            stroke-width: 10;
+            stroke-dasharray: 879;
+            stroke-dashoffset: 0;
+            transition: stroke 0.3s, stroke-dashoffset 1s linear;
+        }
+        body.day-mode .timer-circle circle {
+            stroke: #4CAF50;
+        }
+        .timer-circle-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 36px;
+            color: #FFFFFF;
+            transition: color 0.3s;
+        }
+        body.day-mode .timer-circle-text {
+            color: #1E1E1E;
+        }
+        .settings {
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .settings label {
+            font-size: 14px;
+            color: #888;
+            transition: color 0.3s;
+        }
+        body.day-mode .settings label {
+            color: #666;
+        }
+        .settings input {
+            padding: 5px;
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            background-color: #2A2A2A;
+            border: 1px solid #333;
+            border-radius: 5px;
+            color: #FFFFFF;
+            width: 100px;
+            text-align: center;
+            transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+        }
+        body.day-mode .settings input {
+            background-color: #F5F5F5;
+            border-color: #CCC;
+            color: #1E1E1E;
+        }
+        .settings input:focus {
+            outline: none;
+            border-color: #FF6F61;
+        }
+        body.day-mode .settings input:focus {
+            border-color: #4CAF50;
+        }
+        .settings select {
+            padding: 5px;
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            background-color: #2A2A2A;
+            border: 1px solid #333;
+            border-radius: 5px;
+            color: #FFFFFF;
+            width: 120px;
+            transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+        }
+        body.day-mode .settings select {
+            background-color: #F5F5F5;
+            border-color: #CCC;
+            color: #1E1E1E;
+        }
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .theme-toggle input {
+            display: none;
+        }
+        .theme-toggle label {
+            width: 60px;
+            height: 30px;
+            background-color: #333;
+            border-radius: 15px;
+            position: relative;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .theme-toggle label::before {
+            content: '';
+            position: absolute;
+            width: 26px;
+            height: 26px;
+            background-color: #FF6F61;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s, background-color 0.3s;
+        }
+        .theme-toggle input:checked + label {
+            background-color: #4CAF50;
+        }
+        .theme-toggle input:checked + label::before {
+            transform: translateX(30px);
+            background-color: #FFD700;
+        }
+        .theme-toggle span {
+            font-size: 14px;
+            color: #888;
+            transition: color 0.3s;
+        }
+        body.day-mode .theme-toggle span {
+            color: #666;
+        }
+        .alarm-indicator {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #FF6F61;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        body.day-mode .alarm-indicator {
+            color: #4CAF50;
+        }
+        .alarm-indicator.active {
+            opacity: 1;
+        }
+        .alarm-selection {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .preview-btn {
+            padding: 5px 10px;
+            font-size: 14px;
+            background-color: #FF6F61;
+        }
+        .preview-btn:hover {
+            background-color: #E65A50;
+        }
+        body.day-mode .preview-btn {
+            background-color: #4CAF50;
+        }
+        body.day-mode .preview-btn:hover {
+            background-color: #45A049;
+        }
+    </style>
+</head>
+<body>
+    <div class="theme-toggle">
+        <input type="checkbox" id="themeSwitch" onchange="toggleTheme()">
+        <label for="themeSwitch"></label>
+        <span id="themeLabel">Modo Noche</span>
+    </div>
+    <div class="container">
+        <div class="left-panel">
+            <div class="timer-controls">
+                <div class="settings">
+                    <label>Trabajo (min):</label>
+                    <input type="number" id="workTime" value="25" min="1" max="60">
+                    <label>Descanso Corto (min):</label>
+                    <input type="number" id="shortBreakTime" value="5" min="1" max="60">
+                    <label>Descanso Largo (min):</label>
+                    <input type="number" id="longBreakTime" value="15" min="1" max="60">
+                    <label>Sonido de Alarma:</label>
+                    <div class="alarm-selection">
+                        <select id="alarmSoundSelect">
+                            <option value="beep1" selected>Beep 1</option>
+                            <option value="beep2">Beep 2</option>
+                            <option value="bell">Campana</option>
+                        </select>
+                        <button class="preview-btn" onclick="previewAlarmSound()">Escuchar</button>
+                    </div>
+                </div>
+                <div id="phase">Trabajo</div>
+                <div id="timer">25:00</div>
+                <div id="cycle">Ciclo 1 de 4</div>
+                <div class="controls">
+                    <button class="start-btn" onclick="startTimer()">Iniciar</button>
+                    <button class="stop-btn" onclick="stopTimer()">Parar</button>
+                </div>
+                <div id="alarmIndicator" class="alarm-indicator">Alarma sonando...</div>
+            </div>
+        </div>
+        <div class="right-panel">
+            <div class="timer-circle">
+                <svg>
+                    <circle id="progressCircle" cx="150" cy="150" r="140"></circle>
+                </svg>
+                <div id="circleTimer" class="timer-circle-text">25:00</div>
+            </div>
+        </div>
+    </div>
+
+    <audio id="alarmSound"></audio>
+
+    <script>
+        let workTime = parseInt(document.getElementById('workTime').value) * 60;
+        let shortBreakTime = parseInt(document.getElementById('shortBreakTime').value) * 60;
+        let longBreakTime = parseInt(document.getElementById('longBreakTime').value) * 60;
+
+        let timeLeft = workTime;
+        let totalTime = workTime;
+        let timerId = null;
+        let cycle = 1;
+        let isWorkPhase = true;
+
+        const timerDisplay = document.getElementById('timer');
+        const circleTimerDisplay = document.getElementById('circleTimer');
+        const phaseDisplay = document.getElementById('phase');
+        const cycleDisplay = document.getElementById('cycle');
+        const progressCircle = document.getElementById('progressCircle');
+        const alarm = document.getElementById('alarmSound');
+        const alarmIndicator = document.getElementById('alarmIndicator');
+        const themeLabel = document.getElementById('themeLabel');
+        const alarmSoundSelect = document.getElementById('alarmSoundSelect');
+
+        const alarmSounds = {
+            beep1: 'sounds/beep1.wav',
+            beep2: 'sounds/beep2.wav',
+            bell: 'sounds/bell.wav'
+        };
+
+        // Solicitar permiso para notificaciones al cargar la página
+        function requestNotificationPermission() {
+            if ("Notification" in window) {
+                if (Notification.permission === "granted") {
+                    console.log("Permiso para notificaciones ya concedido.");
+                } else if (Notification.permission !== "denied") {
+                    Notification.requestPermission().then(permission => {
+                        if (permission === "granted") {
+                            console.log("Permiso para notificaciones concedido.");
+                        } else {
+                            console.log("Permiso para notificaciones denegado.");
+                        }
+                    });
+                }
+            } else {
+                console.log("Este navegador no soporta notificaciones.");
+            }
+        }
+
+        // Mostrar una notificación
+        function showNotification(title, body) {
+            if ("Notification" in window && Notification.permission === "granted") {
+                new Notification(title, {
+                    body: body,
+                    icon: 'https://via.placeholder.com/150' // Puedes agregar un ícono personalizado aquí
+                });
+            }
+        }
+
+        // Llamar a la solicitud de permiso al cargar la página
+        window.onload = function() {
+            requestNotificationPermission();
+            updateDisplay();
+        };
+
+        function updateDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            timerDisplay.textContent = timeString;
+            circleTimerDisplay.textContent = timeString;
+
+            const progress = (timeLeft / totalTime) * 879;
+            progressCircle.style.strokeDashoffset = 879 - progress;
+        }
+
+        function playAlarm() {
+            const selectedSound = alarmSoundSelect.value;
+            alarm.src = alarmSounds[selectedSound];
+            alarm.play().catch(error => {
+                console.error('Error al reproducir la alarma:', error);
+            });
+
+            alarmIndicator.classList.add('active');
+
+            // Usar el evento 'onended' para detectar cuando el audio termina
+            alarm.onended = () => {
+                alarm.currentTime = 0;
+                alarmIndicator.classList.remove('active');
+            };
+        }
+
+        function previewAlarmSound() {
+            const selectedSound = alarmSoundSelect.value;
+            alarm.src = alarmSounds[selectedSound];
+            alarm.play().catch(error => {
+                console.error('Error al previsualizar la alarma:', error);
+            });
+
+            // Detener la previsualización después de 3 segundos
+            setTimeout(() => {
+                alarm.pause();
+                alarm.currentTime = 0;
+            }, 3000);
+        }
+
+        function startTimer() {
+            if (timerId) return;
+
+            workTime = parseInt(document.getElementById('workTime').value) * 60;
+            shortBreakTime = parseInt(document.getElementById('shortBreakTime').value) * 60;
+            longBreakTime = parseInt(document.getElementById('longBreakTime').value) * 60;
+
+            if (isNaN(workTime) || workTime <= 0) workTime = 25 * 60;
+            if (isNaN(shortBreakTime) || shortBreakTime <= 0) shortBreakTime = 5 * 60;
+            if (isNaN(longBreakTime) || longBreakTime <= 0) longBreakTime = 15 * 60;
+
+            if (!timerId && timeLeft === 0) {
+                timeLeft = workTime;
+                totalTime = workTime;
+            }
+
+            timerId = setInterval(() => {
+                if (timeLeft > 0) {
+                    timeLeft--;
+                    updateDisplay();
+                } else {
+                    clearInterval(timerId);
+                    timerId = null;
+                    playAlarm();
+
+                    if (isWorkPhase) {
+                        if (cycle === 4) {
+                            timeLeft = longBreakTime;
+                            totalTime = longBreakTime;
+                            cycle = 0;
+                            showNotification("¡Tiempo de descanso largo!", "Tómate un descanso largo de " + (longBreakTime / 60) + " minutos.");
+                        } else {
+                            timeLeft = shortBreakTime;
+                            totalTime = shortBreakTime;
+                            showNotification("¡Tiempo de descanso!", "Tómate un descanso corto de " + (shortBreakTime / 60) + " minutos.");
+                        }
+                        isWorkPhase = false;
+                        phaseDisplay.textContent = "Descanso";
+                    } else {
+                        timeLeft = workTime;
+                        totalTime = workTime;
+                        isWorkPhase = true;
+                        cycle++;
+                        showNotification("¡Hora de trabajar!", "Comienza tu sesión de trabajo de " + (workTime / 60) + " minutos.");
+                        phaseDisplay.textContent = "Trabajo";
+                    }
+
+                    cycleDisplay.textContent = `Ciclo ${cycle} de 4`;
+                    startTimer();
+                }
+            }, 1000);
+
+            updateDisplay();
+        }
+
+        function stopTimer() {
+            if (timerId) {
+                clearInterval(timerId);
+                timerId = null;
+                timeLeft = 0;
+                updateDisplay();
+                alarm.pause();
+                alarm.currentTime = 0;
+                alarmIndicator.classList.remove('active');
+            }
+        }
+
+        document.getElementById('workTime').addEventListener('change', () => {
+            if (!timerId) {
+                workTime = parseInt(document.getElementById('workTime').value) * 60;
+                if (isNaN(workTime) || workTime <= 0) workTime = 25 * 60;
+                timeLeft = workTime;
+                totalTime = workTime;
+                updateDisplay();
+            }
+        });
+
+        function toggleTheme() {
+            const body = document.body;
+            const isDayMode = body.classList.toggle('day-mode');
+            themeLabel.textContent = isDayMode ? 'Modo Día' : 'Modo Noche';
+            localStorage.setItem('theme', isDayMode ? 'day' : 'night');
+        }
+
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'day') {
+            document.body.classList.add('day-mode');
+            document.getElementById('themeSwitch').checked = true;
+            themeLabel.textContent = 'Modo Día';
+        }
+
+        updateDisplay();
+    </script>
+</body>
+</html>
